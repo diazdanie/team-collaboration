@@ -49,7 +49,7 @@ public class PanelPuntoVenta extends JPanel {
 
         // ticket
         JPanel panelTicket = new JPanel(new BorderLayout(10, 10));
-        panelTicket.setPreferredSize(new Dimension(380, 0)); // Lo hice un poco más ancho
+        panelTicket.setPreferredSize(new Dimension(380, 0));
         panelTicket.setBackground(Color.WHITE);
         panelTicket.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 

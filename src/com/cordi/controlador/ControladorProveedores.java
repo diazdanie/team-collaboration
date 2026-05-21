@@ -1,5 +1,6 @@
 package com.cordi.controlador;
 
+import com.cordi.bd.ConexionBD;
 import com.cordi.modelo.Proveedor;
 import com.cordi.vista.PanelProveedores;
 
@@ -7,31 +8,55 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ControladorProveedores implements ActionListener {
 
     private PanelProveedores panelProveedores;
-    private List<Proveedor> listaProveedores;
+    private List<Proveedor> listaProveedoresBD;
 
     public ControladorProveedores(PanelProveedores panelProveedores) {
         this.panelProveedores = panelProveedores;
-        cargarDatosDePrueba();
-        dibujarTarjetas();
+        this.listaProveedoresBD = new ArrayList<>();
+        
+        cargarProveedoresDesdeBD();
         this.panelProveedores.btnAgregarProveedor.addActionListener(this);
     }
 
-    private void cargarDatosDePrueba() {
-        listaProveedores = new ArrayList<>();
-        listaProveedores.add(new Proveedor(1, "Coca-Cola FEMSA", "Carlos Ruiz", "contacto@femsa.com", "Refrescos y Agua", "Lunes y Jueves - 10:00 AM"));
-        listaProveedores.add(new Proveedor(2, "Bimbo", "Luis Méndez", "ventas@bimbo.com", "Pan dulce y salado", "Martes - 08:00 AM"));
+    // select mysql
+    private void cargarProveedoresDesdeBD() {
+        listaProveedoresBD.clear();
+        String sql = "SELECT * FROM proveedores ORDER BY nombre_empresa ASC";
+        
+        try (Connection con = ConexionBD.obtenerConexion();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+             
+            while (rs.next()) {
+                Proveedor p = new Proveedor(
+                    rs.getInt("id_proveedor"),
+                    rs.getString("nombre_empresa"),
+                    rs.getString("nombre_contacto"),
+                    rs.getString("email"),
+                    rs.getString("tipo_productos"),
+                    rs.getString("horario")
+                );
+                listaProveedoresBD.add(p);
+            }
+            dibujarTarjetas();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(panelProveedores, "ERROR al cargar proveedores: " + ex.getMessage());
+        }
     }
 
     private void dibujarTarjetas() {
         panelProveedores.panelCuadricula.removeAll();
 
-        for (Proveedor p : listaProveedores) {
+        for (Proveedor p : listaProveedoresBD) {
             JPanel tarjeta = new JPanel(new BorderLayout(15, 10));
             tarjeta.setBackground(Color.WHITE);
             tarjeta.setBorder(BorderFactory.createCompoundBorder(
@@ -44,7 +69,7 @@ public class ControladorProveedores implements ActionListener {
             
             JLabel lblEmpresa = new JLabel(p.getNombreEmpresa());
             lblEmpresa.setFont(new Font("Arial", Font.BOLD, 18));
-            lblEmpresa.setForeground(new Color(37, 99, 235));
+            lblEmpresa.setForeground(new Color(37, 99, 235)); 
             
             panelDatos.add(lblEmpresa);
             panelDatos.add(new JLabel("👤 Contacto: " + p.getNombreContacto() + " | ✉️ " + p.getEmail()));
@@ -63,12 +88,17 @@ public class ControladorProveedores implements ActionListener {
             btnEliminar.setForeground(Color.RED);
             btnEliminar.setFocusPainted(false);
             
-            btnEditar.addActionListener(e -> mostrarFormulario(p));
+            btnEditar.addActionListener(e -> mostrarFormulario(p)); 
             
+            // delete sql
             btnEliminar.addActionListener(e -> {
-                if (JOptionPane.showConfirmDialog(panelProveedores, "¿Eliminar a " + p.getNombreEmpresa() + "?") == JOptionPane.YES_OPTION) {
-                    listaProveedores.remove(p);
-                    dibujarTarjetas();
+                if (JOptionPane.showConfirmDialog(panelProveedores, "¿Eliminar definitivamente a " + p.getNombreEmpresa() + " de la BD?") == JOptionPane.YES_OPTION) {
+                    String sqlDelete = "DELETE FROM proveedores WHERE id_proveedor = " + p.getId();
+                    if (ConexionBD.ejecutarInstruccion(sqlDelete)) {
+                        cargarProveedoresDesdeBD();
+                    } else {
+                        JOptionPane.showMessageDialog(panelProveedores, "ERROR al eliminar proveedor.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
 
@@ -92,7 +122,7 @@ public class ControladorProveedores implements ActionListener {
         JTextField txtProductos = new JTextField(provAEditar != null ? provAEditar.getTipoProductos() : "");
         JTextField txtHorario = new JTextField(provAEditar != null ? provAEditar.getHorario() : "");
         
-        if(provAEditar != null) txtEmpresa.setEditable(false);
+        if(provAEditar != null) txtEmpresa.setEditable(false); 
         
         Object[] campos = {
             "Empresa Proveedora:", txtEmpresa,
@@ -105,22 +135,31 @@ public class ControladorProveedores implements ActionListener {
         int opcion = JOptionPane.showConfirmDialog(panelProveedores, campos, provAEditar == null ? "Nuevo Proveedor" : "Editar Proveedor", JOptionPane.OK_CANCEL_OPTION);
         
         if (opcion == JOptionPane.OK_OPTION && !txtEmpresa.getText().isEmpty()) {
+            
+            // insert / update sql
+            String sql;
             if (provAEditar == null) {
-                listaProveedores.add(new Proveedor(listaProveedores.size() + 1, txtEmpresa.getText(), txtContacto.getText(), txtEmail.getText(), txtProductos.getText(), txtHorario.getText()));
+                sql = "INSERT INTO proveedores (nombre_empresa, nombre_contacto, email, tipo_productos, horario) " +
+                      "VALUES ('" + txtEmpresa.getText() + "', '" + txtContacto.getText() + "', '" + txtEmail.getText() + "', '" + txtProductos.getText() + "', '" + txtHorario.getText() + "')";
             } else {
-                provAEditar.setNombreContacto(txtContacto.getText());
-                provAEditar.setEmail(txtEmail.getText());
-                provAEditar.setTipoProductos(txtProductos.getText());
-                provAEditar.setHorario(txtHorario.getText());
+                sql = "UPDATE proveedores SET nombre_contacto = '" + txtContacto.getText() + "', email = '" + txtEmail.getText() + "', " +
+                      "tipo_productos = '" + txtProductos.getText() + "', horario = '" + txtHorario.getText() + "' " +
+                      "WHERE id_proveedor = " + provAEditar.getId();
             }
-            dibujarTarjetas();
+            
+            if (ConexionBD.ejecutarInstruccion(sql)) {
+                JOptionPane.showMessageDialog(panelProveedores, "Datos guardados en MySQL");
+                cargarProveedoresDesdeBD();
+            } else {
+                JOptionPane.showMessageDialog(panelProveedores, "ERROR al guardar en BD", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == panelProveedores.btnAgregarProveedor) {
-            mostrarFormulario(null);
+            mostrarFormulario(null); 
         }
     }
 }

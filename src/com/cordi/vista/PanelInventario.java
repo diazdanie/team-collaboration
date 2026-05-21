@@ -6,10 +6,16 @@ import java.awt.*;
 
 public class PanelInventario extends JPanel {
 
+    // cajas formulario
     public JTextField txtCodigo, txtNombre, txtPrecio, txtStock, txtStockMin;
     public JComboBox<String> cbCategoria; 
     public JButton btnGuardarNuevo, btnActualizar, btnEliminar, btnLimpiar;
     
+    // elementos buscador
+    public JTextField txtBuscador;
+    public JComboBox<String> cbFiltroCategoria;
+    
+    // btns tabla
     public JButton btnBajoStock, btnVerTodos;
     
     public JTable tablaProductos;
@@ -27,7 +33,7 @@ public class PanelInventario extends JPanel {
         panelHeader.add(lblTitulo, BorderLayout.WEST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // formulario izq
+        // forms izquierdo
         JPanel panelFormulario = new JPanel(new GridLayout(13, 1, 0, 5));
         panelFormulario.setPreferredSize(new Dimension(300, 0));
         panelFormulario.setBackground(Color.WHITE);
@@ -36,10 +42,10 @@ public class PanelInventario extends JPanel {
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
 
-        panelFormulario.add(new JLabel("Código de Barras:"));
+        panelFormulario.add(new JLabel("Codigo:"));
         txtCodigo = new JTextField(); panelFormulario.add(txtCodigo);
 
-        panelFormulario.add(new JLabel("Categoría:"));
+        panelFormulario.add(new JLabel("Categoria:"));
         cbCategoria = new JComboBox<>(new String[]{"Lácteos", "Abarrotes", "Panadería", "Limpieza", "Bebidas"});
         cbCategoria.setBackground(Color.WHITE); panelFormulario.add(cbCategoria);
 
@@ -57,7 +63,7 @@ public class PanelInventario extends JPanel {
         txtStock = new JTextField(); pStock.add(txtStock, BorderLayout.CENTER);
         
         JPanel pMin = new JPanel(new BorderLayout()); pMin.setBackground(Color.WHITE);
-        pMin.add(new JLabel("Stock Mínimo:"), BorderLayout.NORTH);
+        pMin.add(new JLabel("Stock Minimo:"), BorderLayout.NORTH);
         txtStockMin = new JTextField(); pMin.add(txtStockMin, BorderLayout.CENTER);
         
         panelStocks.add(pStock); panelStocks.add(pMin); panelFormulario.add(panelStocks);
@@ -74,21 +80,38 @@ public class PanelInventario extends JPanel {
         btnActualizar.setForeground(Color.WHITE);
         btnActualizar.setFocusPainted(false); panelFormulario.add(btnActualizar);
 
-        btnLimpiar = new JButton("Limpiar Cajas");
+        btnLimpiar = new JButton("Limpiar");
         btnLimpiar.setBackground(Color.LIGHT_GRAY);
         btnLimpiar.setFocusPainted(false); panelFormulario.add(btnLimpiar);
 
         add(panelFormulario, BorderLayout.WEST);
 
-        // tabla der
+        // tabla y filtros
         JPanel panelTabla = new JPanel(new BorderLayout(0, 10));
         panelTabla.setBackground(new Color(245, 247, 250));
 
-        // botones de arriba
-        JPanel panelFiltros = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        panelFiltros.setBackground(new Color(245, 247, 250));
+        // panel superior para buscadores y botones
+        JPanel panelBarraSuperior = new JPanel(new BorderLayout());
+        panelBarraSuperior.setBackground(new Color(245, 247, 250));
+
+        // buscador y categorias (izquierda)
+        JPanel panelBuscadores = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        panelBuscadores.setBackground(new Color(245, 247, 250));
         
-        btnVerTodos = new JButton("📋 Ver Todos");
+        panelBuscadores.add(new JLabel("🔍 Buscar:"));
+        txtBuscador = new JTextField(15);
+        panelBuscadores.add(txtBuscador);
+        
+        panelBuscadores.add(new JLabel("📂 Categoría:"));
+        cbFiltroCategoria = new JComboBox<>(new String[]{"Todas", "Lácteos", "Abarrotes", "Panadería", "Limpieza", "Bebidas"});
+        cbFiltroCategoria.setBackground(Color.WHITE);
+        panelBuscadores.add(cbFiltroCategoria);
+
+        // btns de accion (derecha)
+        JPanel panelBotonesAccion = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        panelBotonesAccion.setBackground(new Color(245, 247, 250));
+        
+        btnVerTodos = new JButton("📋 Limpiar Filtros");
         btnVerTodos.setBackground(Color.WHITE);
         btnVerTodos.setFocusPainted(false);
         
@@ -97,10 +120,14 @@ public class PanelInventario extends JPanel {
         btnBajoStock.setForeground(Color.WHITE);
         btnBajoStock.setFocusPainted(false);
         
-        panelFiltros.add(btnVerTodos);
-        panelFiltros.add(btnBajoStock);
-        panelTabla.add(panelFiltros, BorderLayout.NORTH);
+        panelBotonesAccion.add(btnVerTodos);
+        panelBotonesAccion.add(btnBajoStock);
 
+        panelBarraSuperior.add(panelBuscadores, BorderLayout.WEST);
+        panelBarraSuperior.add(panelBotonesAccion, BorderLayout.EAST);
+        panelTabla.add(panelBarraSuperior, BorderLayout.NORTH);
+
+        // configuracion tabla
         modeloTabla = new DefaultTableModel(new String[]{"Código", "Categoría", "Nombre", "Precio", "Stock", "Mínimo"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }

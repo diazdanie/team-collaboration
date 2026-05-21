@@ -1,31 +1,44 @@
 package com.cordi.controlador;
 
+import com.cordi.bd.ConexionBD;
 import com.cordi.modelo.Producto;
 import com.cordi.vista.PanelInventario;
 
 import javax.swing.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 public class ControladorInventario implements ActionListener {
 
     private PanelInventario panelInventario;
-    private List<Producto> inventarioTemporal; 
+    private boolean mostrandoBajoStock = false; 
 
     public ControladorInventario(PanelInventario panelInventario) {
         this.panelInventario = panelInventario;
-        cargarProductosDePrueba();
-        actualizarTabla();
+        
+        cargarProductosDesdeBD("", "Todas");
 
         this.panelInventario.btnGuardarNuevo.addActionListener(this);
         this.panelInventario.btnActualizar.addActionListener(this);
         this.panelInventario.btnEliminar.addActionListener(this);
         this.panelInventario.btnLimpiar.addActionListener(this);
-        
         this.panelInventario.btnBajoStock.addActionListener(this);
         this.panelInventario.btnVerTodos.addActionListener(this);
 
+        // buscador
+        this.panelInventario.txtBuscador.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                aplicarFiltros();
+            }
+        });
+
+        // filtro por menu
+        this.panelInventario.cbFiltroCategoria.addActionListener(e -> aplicarFiltros());
+
+        // llenar formulario al dar clic en la tabla
         this.panelInventario.tablaProductos.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -37,28 +50,60 @@ public class ControladorInventario implements ActionListener {
                     panelInventario.txtPrecio.setText(panelInventario.modeloTabla.getValueAt(fila, 3).toString().replace("$", ""));
                     panelInventario.txtStock.setText(panelInventario.modeloTabla.getValueAt(fila, 4).toString());
                     panelInventario.txtStockMin.setText(panelInventario.modeloTabla.getValueAt(fila, 5).toString());
-                    panelInventario.txtCodigo.setEditable(false);
+                    panelInventario.txtCodigo.setEditable(false); 
                 }
             }
         });
     }
 
-    private void cargarProductosDePrueba() {
-        inventarioTemporal = new ArrayList<>();
-        inventarioTemporal.add(new Producto(1, "1001", "Lácteos", "Leche Entera 1L", 25.50, 50, 5, "Sin Imagen"));
-        inventarioTemporal.add(new Producto(2, "1002", "Lácteos", "Huevo Blanco 12pz", 32.00, 40, 5, "Sin Imagen"));
-        inventarioTemporal.add(new Producto(3, "2001", "Abarrotes", "Aceite Vegetal 900ml", 38.50, 8, 10, "Sin Imagen")); 
+    // metodo que recolecta filtros visuales
+    private void aplicarFiltros() {
+        String texto = panelInventario.txtBuscador.getText().trim();
+        String categoria = panelInventario.cbFiltroCategoria.getSelectedItem().toString();
+        cargarProductosDesdeBD(texto, categoria);
     }
 
-    private void actualizarTabla() {
-        panelInventario.modeloTabla.setRowCount(0);
-        for (Producto p : inventarioTemporal) {
-            agregarFila(p);
+    // select dinamico
+    private void cargarProductosDesdeBD(String busqueda, String categoria) {
+        panelInventario.modeloTabla.setRowCount(0); 
+        
+        // base de la consulta
+        String sql = "SELECT * FROM productos WHERE 1=1";
+        
+        // si el usuario escribio en el buscador
+        if (!busqueda.isEmpty()) {
+            sql += " AND (nombre LIKE '%" + busqueda + "%' OR codigo LIKE '%" + busqueda + "%')";
         }
-    }
-
-    private void agregarFila(Producto p) {
-        panelInventario.modeloTabla.addRow(new Object[]{p.getCodigo(), p.getCategoria(), p.getNombre(), "$" + p.getPrecio(), p.getStock(), p.getStockMinimo()});
+        
+        // si eligio una categoria especifica
+        if (!categoria.equals("Todas")) {
+            sql += " AND categoria LIKE '%" + categoria + "%'";
+        }
+        
+        // si presiono btn de bajo stock
+        if (mostrandoBajoStock) {
+            sql += " AND stock <= stock_minimo";
+        }
+        
+        sql += " ORDER BY nombre ASC"; // alfabeticamente
+        
+        try (Connection con = ConexionBD.obtenerConexion();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+             
+            while (rs.next()) {
+                panelInventario.modeloTabla.addRow(new Object[]{
+                    rs.getString("codigo"),
+                    rs.getString("categoria"),
+                    rs.getString("nombre"),
+                    "$" + rs.getDouble("precio"),
+                    rs.getInt("stock"),
+                    rs.getInt("stock_minimo")
+                });
+            }
+        } catch (Exception ex) {
+            System.out.println("ERROR al cargar inventario: " + ex.getMessage());
+        }
     }
 
     private void limpiarCajas() {
@@ -74,33 +119,31 @@ public class ControladorInventario implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         
-        // stock bajo rep
+        // activa modo bajo stock y recarga
         if (e.getSource() == panelInventario.btnBajoStock) {
-            panelInventario.modeloTabla.setRowCount(0);
-            boolean hayAlertas = false;
+            mostrandoBajoStock = true;
+            aplicarFiltros();
             
-            for (Producto p : inventarioTemporal) {
-                if (p.getStock() <= p.getStockMinimo()) {
-                    agregarFila(p);
-                    hayAlertas = true;
-                }
-            }
-            
-            if (!hayAlertas) {
-                JOptionPane.showMessageDialog(panelInventario, "El inventario está sano. Ningún producto tiene bajo stock.", "Reporte Limpio", JOptionPane.INFORMATION_MESSAGE);
-                actualizarTabla();
+            if (panelInventario.modeloTabla.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(panelInventario, "Todo bien, ningun producto tiene bajo stock", "Reporte Limpio", JOptionPane.INFORMATION_MESSAGE);
+                mostrandoBajoStock = false;
+                aplicarFiltros();
             }
         }
         
-        // para ver todos los prod
+        // limpia todos los filtros y recarga la tabla original
         else if (e.getSource() == panelInventario.btnVerTodos) {
-            actualizarTabla();
+            mostrandoBajoStock = false;
+            panelInventario.txtBuscador.setText("");
+            panelInventario.cbFiltroCategoria.setSelectedIndex(0);
+            aplicarFiltros();
         }
 
         else if (e.getSource() == panelInventario.btnLimpiar) {
             limpiarCajas();
         }
         
+        // guardar
         else if (e.getSource() == panelInventario.btnGuardarNuevo) {
             try {
                 String codigo = panelInventario.txtCodigo.getText();
@@ -109,48 +152,70 @@ public class ControladorInventario implements ActionListener {
                 double precio = Double.parseDouble(panelInventario.txtPrecio.getText());
                 int stock = Integer.parseInt(panelInventario.txtStock.getText());
                 int min = Integer.parseInt(panelInventario.txtStockMin.getText());
+                String rutaImg = codigo + ".png"; 
 
-                inventarioTemporal.add(new Producto(inventarioTemporal.size() + 1, codigo, categoria, nombre, precio, stock, min, "Sin Imagen"));
-                actualizarTabla();
-                limpiarCajas();
-                JOptionPane.showMessageDialog(panelInventario, "Producto agregado correctamente.");
+                if(codigo.isEmpty() || nombre.isEmpty()) {
+                    JOptionPane.showMessageDialog(panelInventario, "Llena los datos basicos");
+                    return;
+                }
+
+                String sql = "INSERT INTO productos (codigo, categoria, nombre, precio, stock, stock_minimo, imagen_ruta) " +
+                             "VALUES ('" + codigo + "', '" + categoria + "', '" + nombre + "', " + precio + ", " + stock + ", " + min + ", '" + rutaImg + "')";
+                
+                if (ConexionBD.ejecutarInstruccion(sql)) {
+                    JOptionPane.showMessageDialog(panelInventario, "Producto registrado");
+                    aplicarFiltros(); 
+                    limpiarCajas();
+                } else {
+                    JOptionPane.showMessageDialog(panelInventario, "ERROR, verifica que codigo no exista ya", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panelInventario, "Revisa que los campos de precio y stock sean números.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(panelInventario, "Revisa que precio y stock sean numeros", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
         
+        // eliminar
         else if (e.getSource() == panelInventario.btnEliminar) {
-            int fila = panelInventario.tablaProductos.getSelectedRow();
-            if (fila >= 0) {
-                if (JOptionPane.showConfirmDialog(panelInventario, "¿Seguro que deseas eliminar este producto?") == JOptionPane.YES_OPTION) {
-                    inventarioTemporal.remove(fila);
-                    actualizarTabla();
-                    limpiarCajas();
+            String codigoSel = panelInventario.txtCodigo.getText();
+            if (!codigoSel.isEmpty()) {
+                if (JOptionPane.showConfirmDialog(panelInventario, "Eliminar este producto?") == JOptionPane.YES_OPTION) {
+                    String sql = "DELETE FROM productos WHERE codigo = '" + codigoSel + "'";
+                    if (ConexionBD.ejecutarInstruccion(sql)) {
+                        JOptionPane.showMessageDialog(panelInventario, "Producto eliminado");
+                        aplicarFiltros();
+                        limpiarCajas();
+                    }
                 }
             } else {
-                JOptionPane.showMessageDialog(panelInventario, "Selecciona un producto de la tabla primero.");
+                JOptionPane.showMessageDialog(panelInventario, "Selecciona un producto de la tabla primero");
             }
         }
         
+        // actualizar
         else if (e.getSource() == panelInventario.btnActualizar) {
-            int fila = panelInventario.tablaProductos.getSelectedRow();
-            if (fila >= 0) {
+            String codigoSel = panelInventario.txtCodigo.getText();
+            if (!codigoSel.isEmpty() && !panelInventario.txtCodigo.isEditable()) {
                 try {
-                    Producto p = inventarioTemporal.get(fila);
-                    p.setCategoria(panelInventario.cbCategoria.getSelectedItem().toString());
-                    p.setNombre(panelInventario.txtNombre.getText());
-                    p.setPrecio(Double.parseDouble(panelInventario.txtPrecio.getText()));
-                    p.setStock(Integer.parseInt(panelInventario.txtStock.getText()));
-                    p.setStockMinimo(Integer.parseInt(panelInventario.txtStockMin.getText()));
+                    String categoria = panelInventario.cbCategoria.getSelectedItem().toString();
+                    String nombre = panelInventario.txtNombre.getText();
+                    double precio = Double.parseDouble(panelInventario.txtPrecio.getText());
+                    int stock = Integer.parseInt(panelInventario.txtStock.getText());
+                    int min = Integer.parseInt(panelInventario.txtStockMin.getText());
                     
-                    actualizarTabla();
-                    limpiarCajas();
-                    JOptionPane.showMessageDialog(panelInventario, "Producto actualizado correctamente.");
+                    String sql = "UPDATE productos SET categoria = '" + categoria + "', nombre = '" + nombre + 
+                                 "', precio = " + precio + ", stock = " + stock + ", stock_minimo = " + min + 
+                                 " WHERE codigo = '" + codigoSel + "'";
+                                 
+                    if (ConexionBD.ejecutarInstruccion(sql)) {
+                        JOptionPane.showMessageDialog(panelInventario, "Producto actualizado");
+                        aplicarFiltros();
+                        limpiarCajas();
+                    }
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panelInventario, "Error en los datos numéricos.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(panelInventario, "ERROR en los datos numericos", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                JOptionPane.showMessageDialog(panelInventario, "Selecciona un producto de la tabla para actualizar.");
+                JOptionPane.showMessageDialog(panelInventario, "Selecciona un producto de la tabla para actualizar");
             }
         }
     }

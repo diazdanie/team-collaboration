@@ -20,7 +20,7 @@ public class PanelProveedores extends JPanel {
         panelTitulos.setBackground(new Color(245, 247, 250));
         JLabel lblTitulo = new JLabel("Directorio de Proveedores");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
-        JLabel lblSub = new JLabel("Gestione sus relaciones comerciales, horarios y productos");
+        JLabel lblSub = new JLabel("Gestionar relaciones comerciales, horarios y productos");
         lblSub.setForeground(Color.GRAY);
         panelTitulos.add(lblTitulo);
         panelTitulos.add(lblSub);

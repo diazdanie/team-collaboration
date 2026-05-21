@@ -31,13 +31,13 @@ public class FrmDashboard extends JFrame {
         
         panelIzquierdo.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(220, 220, 220)));
 
-        JLabel lblLogo = new JLabel("POS SYSTEM");
+        JLabel lblLogo = new JLabel("SITEMA POS GOD");
         lblLogo.setFont(new Font("Arial", Font.BOLD, 20));
         lblLogo.setForeground(new Color(37, 99, 235));
         lblLogo.setBounds(20, 20, 200, 30);
         panelIzquierdo.add(lblLogo);
 
-        JLabel lblSesion = new JLabel("SESIÓN: " + usuarioActivo.obtenerRol().toUpperCase());
+        JLabel lblSesion = new JLabel("SESION: " + usuarioActivo.obtenerRol().toUpperCase());
         lblSesion.setFont(new Font("Arial", Font.BOLD, 10));
         lblSesion.setForeground(Color.GRAY);
         lblSesion.setBounds(20, 50, 200, 20);
@@ -48,7 +48,7 @@ public class FrmDashboard extends JFrame {
         btnTickets = crearBotonMenu("Tickets", 190);
         btnProveedores = crearBotonMenu("Proveedores", 240);
         btnCorte = crearBotonMenu("Corte", 290);
-        btnConfig = crearBotonMenu("Configuración", 340);
+        btnConfig = crearBotonMenu("Configuracion", 340);
 
         panelIzquierdo.add(btnVenta);
         panelIzquierdo.add(btnInventario);

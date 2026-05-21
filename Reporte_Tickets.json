@@ -1,0 +1,23 @@
+[
+  {
+    "id_ticket": "TK-001",
+    "fecha": "17/05/2026",
+    "hora": "14:30:00",
+    "total": 192.00,
+    "estado": "Completado"
+  },
+  {
+    "id_ticket": "TK-002",
+    "fecha": "17/05/2026",
+    "hora": "15:45:12",
+    "total": 55.50,
+    "estado": "Completado"
+  },
+  {
+    "id_ticket": "TK-003",
+    "fecha": "16/05/2026",
+    "hora": "09:15:00",
+    "total": 320.00,
+    "estado": "Completado"
+  }
+]

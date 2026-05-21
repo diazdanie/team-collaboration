@@ -20,6 +20,7 @@ public class PanelCorte extends JPanel {
         setBackground(new Color(245, 247, 250));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+        // panel arriba, tarjeta
         JPanel panelArriba = new JPanel(new BorderLayout(0, 20));
         panelArriba.setBackground(new Color(245, 247, 250));
 
@@ -29,7 +30,7 @@ public class PanelCorte extends JPanel {
 
         JPanel panelTitulosTarjeta = new JPanel(new BorderLayout());
         panelTitulosTarjeta.setBackground(new Color(17, 24, 39));
-        JLabel lblTituloOscuro = new JLabel("VENTAS DEL DÍA");
+        JLabel lblTituloOscuro = new JLabel("VENTAS DEL DIA");
         lblTituloOscuro.setForeground(Color.LIGHT_GRAY);
         lblTituloOscuro.setFont(new Font("Arial", Font.BOLD, 12));
         
@@ -68,7 +69,7 @@ public class PanelCorte extends JPanel {
 
         panelArriba.add(tarjetaOscura, BorderLayout.CENTER);
 
-        btnCerrarDia = new JButton("CERRAR DÍA Y LIMPIAR CAJA");
+        btnCerrarDia = new JButton("CERRAR DIA Y LIMPIAR CAJA");
         btnCerrarDia.setBackground(new Color(220, 38, 38)); 
         btnCerrarDia.setForeground(Color.WHITE);
         btnCerrarDia.setFont(new Font("Arial", Font.BOLD, 18));
@@ -78,7 +79,7 @@ public class PanelCorte extends JPanel {
 
         add(panelArriba, BorderLayout.NORTH);
 
-        // abajo
+        // panel abajo, historial
         JPanel panelAbajo = new JPanel(new BorderLayout(0, 10));
         panelAbajo.setBackground(new Color(245, 247, 250));
         
@@ -97,8 +98,9 @@ public class PanelCorte extends JPanel {
         
         JScrollPane scrollTabla = new JScrollPane(tablaHistorial);
         scrollTabla.getViewport().setBackground(Color.WHITE);
-        add(scrollTabla, BorderLayout.CENTER);
-
+        
+        panelAbajo.add(scrollTabla, BorderLayout.CENTER);
+        
         add(panelAbajo, BorderLayout.CENTER);
     }
 

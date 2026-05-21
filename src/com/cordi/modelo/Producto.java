@@ -9,7 +9,7 @@ public class Producto {
     private double precio;
     private int stock;
     private int stockMinimo;
-    private String rutaImagen; // ruta del archivo (ej "img/coca.png") para no saturar la bd
+    private String rutaImagen;
 
     public Producto(int id, String codigo, String categoria, String nombre, double precio, int stock, int stockMinimo, String rutaImagen) {
         this.id = id;

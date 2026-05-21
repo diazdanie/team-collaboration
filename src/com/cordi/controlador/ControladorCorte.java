@@ -1,22 +1,28 @@
 package com.cordi.controlador;
 
+import com.cordi.bd.ConexionBD;
+import com.cordi.modelo.Usuario;
 import com.cordi.vista.PanelCorte;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class ControladorCorte implements ActionListener {
 
     private PanelCorte panelCorte;
-    
-    private double totalVendidoHoy = 864.50; 
-    private int numeroVentasHoy = 5;
-    private double fondoDeCaja = 500.0;
+    private double totalVendidoHoy = 0.0; 
+    private int numeroVentasHoy = 0;
+    private double fondoDeCaja = 500.0; 
 
-    public ControladorCorte(PanelCorte panelCorte, com.cordi.modelo.Usuario usuario) {
+    public ControladorCorte(PanelCorte panelCorte, Usuario usuario) {
         this.panelCorte = panelCorte;
         
         if (usuario.obtenerRol().equals("Vendedor")) {
@@ -24,74 +30,99 @@ public class ControladorCorte implements ActionListener {
             this.panelCorte.btnFondoCaja.setText("Fondo Fijo: $500");
         }
 
-        cargarDatosDelDia();
+        this.panelCorte.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                cargarDatosDelTurno();
+                cargarHistorialCortes();
+            }
+        });
+
         this.panelCorte.btnCerrarDia.addActionListener(this);
         this.panelCorte.btnFondoCaja.addActionListener(this);
     }
 
-    private void cargarDatosDelDia() {
+    private void cargarDatosDelTurno() {
+        String ultimaFechaCierre = "2000-01-01 00:00:00"; 
+        try (Connection con = ConexionBD.obtenerConexion();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT MAX(fecha_cierre) AS ultimo FROM cortes_caja")) {
+            if (rs.next() && rs.getString("ultimo") != null) {
+                ultimaFechaCierre = rs.getString("ultimo").replace(".0", ""); 
+            }
+        } catch (Exception ex) { }
+
+        String sql = "SELECT COUNT(id_venta) AS num_ventas, SUM(total_final) AS total_dia " +
+                     "FROM ventas WHERE estado = 'Completado' " +
+                     "AND CAST(CONCAT(fecha, ' ', hora) AS DATETIME) > CAST('" + ultimaFechaCierre + "' AS DATETIME)";
+                     
+        try (Connection con = ConexionBD.obtenerConexion();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                numeroVentasHoy = rs.getInt("num_ventas");
+                totalVendidoHoy = rs.getDouble("total_dia"); 
+            }
+        } catch (Exception ex) { }
+
         panelCorte.lblTotalHoy.setText("$" + String.format("%.2f", totalVendidoHoy));
         panelCorte.lblVentasHoy.setText(String.valueOf(numeroVentasHoy));
         panelCorte.lblFondoCaja.setText("$" + String.format("%.2f", fondoDeCaja));
     }
 
+    private void cargarHistorialCortes() {
+        panelCorte.modeloTabla.setRowCount(0); 
+        String sql = "SELECT * FROM cortes_caja ORDER BY id_corte DESC";
+        
+        try (Connection con = ConexionBD.obtenerConexion();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+             
+            while (rs.next()) {
+                panelCorte.modeloTabla.addRow(new Object[]{
+                    rs.getString("estado"),
+                    rs.getString("fecha_cierre").replace(".0", ""),
+                    "-",
+                    "$ " + String.format("%.2f", rs.getDouble("ventas_totales")),
+                    "$ " + String.format("%.2f", rs.getDouble("fondo_inicial")),
+                    "$ " + String.format("%.2f", rs.getDouble("ventas_totales") + rs.getDouble("fondo_inicial"))
+                });
+            }
+            // actualizar tabla
+            panelCorte.tablaHistorial.revalidate();
+            panelCorte.tablaHistorial.repaint();
+            
+        } catch (Exception ex) { 
+            System.err.println("ERROR HISTORIAL: " + ex.getMessage());
+        }
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        
-        // ingresar fondo
         if (e.getSource() == panelCorte.btnFondoCaja) {
-            String montoStr = JOptionPane.showInputDialog(panelCorte, "Ingresa el dinero base (Fondo de caja) para dar cambio:", "500");
-            if (montoStr != null && !montoStr.isEmpty()) {
+            String montoStr = JOptionPane.showInputDialog(panelCorte, "Ingresa el dinero base:", fondoDeCaja);
+            if (montoStr != null) {
                 try {
                     fondoDeCaja = Double.parseDouble(montoStr);
-                    cargarDatosDelDia();
-                    JOptionPane.showMessageDialog(panelCorte, "Fondo de caja actualizado.");
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panelCorte, "Ingresa un número válido.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
+                    cargarDatosDelTurno();
+                } catch (Exception ex) { }
             }
-        }
-        
-        // cerrar day
-        else if (e.getSource() == panelCorte.btnCerrarDia) {
-            
-            if (totalVendidoHoy <= 0 && fondoDeCaja <= 0) {
-                JOptionPane.showMessageDialog(panelCorte, "La caja está completamente vacía (sin ventas y sin fondo).", "Aviso", JOptionPane.WARNING_MESSAGE);
+        } else if (e.getSource() == panelCorte.btnCerrarDia) {
+            if (totalVendidoHoy <= 0) {
+                JOptionPane.showMessageDialog(panelCorte, "No hay ventas nuevas");
                 return;
             }
-
-            double totalFisicoEsperado = totalVendidoHoy + fondoDeCaja;
-
-            int confirmar = JOptionPane.showConfirmDialog(panelCorte, 
-                "Resumen de Corte:\n" +
-                "Ventas del día: $" + totalVendidoHoy + "\n" +
-                "Fondo de Caja: $" + fondoDeCaja + "\n" +
-                "---------------------------------\n" +
-                "EFECTIVO TOTAL EN CAJÓN: $" + totalFisicoEsperado + "\n\n" +
-                "¿Confirmar cierre de caja?", 
-                "Corte de Caja", JOptionPane.YES_NO_OPTION);
-            
-            if (confirmar == JOptionPane.YES_OPTION) {
-                SimpleDateFormat sdfHora = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-                
-                Object[] nuevoCorte = new Object[]{
-                    "Cerrado", 
-                    sdfHora.format(new Date()), 
-                    numeroVentasHoy, 
-                    "$" + totalVendidoHoy,
-                    "$" + fondoDeCaja,
-                    "$" + totalFisicoEsperado
-                };
-                
-                panelCorte.modeloTabla.insertRow(0, nuevoCorte);
-
-                // limpiar
-                totalVendidoHoy = 0.0;
-                numeroVentasHoy = 0;
-                fondoDeCaja = 0.0; 
-                cargarDatosDelDia();
-                
-                JOptionPane.showMessageDialog(panelCorte, "Corte realizado. Retira el dinero del cajón.");
+            if (JOptionPane.showConfirmDialog(panelCorte, "Confirmar cierre?") == JOptionPane.YES_OPTION) {
+                String fechaHoy = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+                String fechaCierre = fechaHoy + " " + new SimpleDateFormat("HH:mm:ss").format(new Date());
+                String sqlInsert = "INSERT INTO cortes_caja (fecha_apertura, fecha_cierre, fondo_inicial, ventas_totales, estado) " +
+                                   "VALUES ('" + fechaHoy + " 00:00:00', '" + fechaCierre + "', " + fondoDeCaja + ", " + totalVendidoHoy + ", 'Cerrado')";
+                if (ConexionBD.ejecutarInstruccion(sqlInsert)) {
+                    fondoDeCaja = 500.0;
+                    cargarDatosDelTurno(); 
+                    cargarHistorialCortes();
+                    JOptionPane.showMessageDialog(panelCorte, "Corte registrado");
+                } 
             }
         }
     }

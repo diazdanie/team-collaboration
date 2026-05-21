@@ -21,7 +21,7 @@ public class PanelConfiguracion extends JPanel {
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        JLabel lblTitulo = new JLabel("⚙️ Preferencias del Sistema");
+        JLabel lblTitulo = new JLabel("Preferencias del Sistema");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
         lblTitulo.setBounds(30, 20, 400, 30);
         panelCentro.add(lblTitulo);
@@ -31,7 +31,7 @@ public class PanelConfiguracion extends JPanel {
         lblImpTitulo.setBounds(30, 80, 200, 20);
         panelCentro.add(lblImpTitulo);
 
-        JLabel lblImpSub = new JLabel("Detectada: POS-58 Generic");
+        JLabel lblImpSub = new JLabel("Detectada: Nose");
         lblImpSub.setFont(new Font("Arial", Font.PLAIN, 12));
         lblImpSub.setForeground(Color.GRAY);
         lblImpSub.setBounds(30, 100, 200, 20);
@@ -44,13 +44,13 @@ public class PanelConfiguracion extends JPanel {
         btnImpresora.setBounds(320, 85, 130, 30);
         panelCentro.add(btnImpresora);
 
-        JLabel lblRazon = new JLabel("Razón Social (Aparecerá en el ticket):");
+        JLabel lblRazon = new JLabel("Razon Social (Aparecera en el ticket):");
         lblRazon.setFont(new Font("Arial", Font.BOLD, 12));
         lblRazon.setForeground(Color.GRAY);
         lblRazon.setBounds(30, 150, 300, 20);
         panelCentro.add(lblRazon);
 
-        txtRazonSocial = new JTextField("Abarrotes El Paso S.A. de C.V.");
+        txtRazonSocial = new JTextField("La Bodega De Don Papu S.A. de C.V.");
         txtRazonSocial.setFont(new Font("Arial", Font.BOLD, 14));
         txtRazonSocial.setBackground(new Color(245, 247, 250));
         txtRazonSocial.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));

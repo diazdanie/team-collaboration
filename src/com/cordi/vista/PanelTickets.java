@@ -8,9 +8,9 @@ public class PanelTickets extends JPanel {
 
     public JTable tablaTickets;
     public DefaultTableModel modeloTabla;
-    public JButton btnReimprimir, btnExcel, btnFiltrar, btnDevolucion;
+    public JButton btnReimprimir, btnExcel, btnFiltrar, btnDevolucion, btnJson;
     public JTextField txtFechaInicio, txtFechaFin;
-
+    
     public PanelTickets() {
         setLayout(new BorderLayout(20, 20));
         setBackground(new Color(245, 247, 250));
@@ -54,30 +54,39 @@ public class PanelTickets extends JPanel {
         scrollTabla.getViewport().setBackground(Color.WHITE);
         add(scrollTabla, BorderLayout.CENTER);
 
+        // botones inferiores
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         panelBotones.setBackground(new Color(245, 247, 250));
 
-        btnDevolucion = new JButton("🔄 Procesar Devolución");
-        btnDevolucion.setBackground(new Color(220, 38, 38));
+        btnDevolucion = new JButton("🔄 Procesar Devolucion");
+        btnDevolucion.setBackground(new Color(220, 38, 38)); 
         btnDevolucion.setForeground(Color.WHITE);
         btnDevolucion.setPreferredSize(new Dimension(200, 40));
         btnDevolucion.setFocusPainted(false);
 
-        btnReimprimir = new JButton("Re-imprimir Ticket");
+        btnReimprimir = new JButton("Reimprimir Ticket");
         btnReimprimir.setBackground(new Color(37, 99, 235)); 
         btnReimprimir.setForeground(Color.WHITE);
-        btnReimprimir.setPreferredSize(new Dimension(180, 40));
+        btnReimprimir.setPreferredSize(new Dimension(160, 40));
         btnReimprimir.setFocusPainted(false);
 
-        btnExcel = new JButton("Exportar a Excel");
+        btnExcel = new JButton("Exportar Excel");
         btnExcel.setBackground(new Color(34, 197, 94)); 
         btnExcel.setForeground(Color.WHITE);
-        btnExcel.setPreferredSize(new Dimension(180, 40));
+        btnExcel.setPreferredSize(new Dimension(140, 40));
         btnExcel.setFocusPainted(false);
+
+        btnJson = new JButton("Exportar JSON");
+        btnJson.setBackground(new Color(15, 23, 42));
+        btnJson.setForeground(Color.WHITE);
+        btnJson.setPreferredSize(new Dimension(140, 40));
+        btnJson.setFocusPainted(false);
+        this.btnExcel.putClientProperty("btnJson", btnJson);
 
         panelBotones.add(btnDevolucion);
         panelBotones.add(btnReimprimir);
         panelBotones.add(btnExcel);
+        panelBotones.add(btnJson);
         add(panelBotones, BorderLayout.SOUTH);
     }
 }

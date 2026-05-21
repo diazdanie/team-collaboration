@@ -12,7 +12,7 @@ public class FrmLogin extends JFrame {
 
     public FrmLogin() {
         // conf ventana principal
-        setTitle("Abarrotes POS - Iniciar Sesión");
+        setTitle("Abarrotes BDDP - Iniciar Sesion");
         setSize(350, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -22,12 +22,12 @@ public class FrmLogin extends JFrame {
         panelPrincipal.setLayout(null);
         panelPrincipal.setBackground(Color.WHITE); 
 
-        JLabel lblTitulo = new JLabel("Abarrotes POS", SwingConstants.CENTER);
+        JLabel lblTitulo = new JLabel("Abarrotes BDDP", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
-        lblTitulo.setBounds(0, 30, 350, 40); // (x, y, ancho, alto)
+        lblTitulo.setBounds(0, 30, 350, 40);
         panelPrincipal.add(lblTitulo);
 
-        JLabel lblSub = new JLabel("Inicia sesión para comenzar", SwingConstants.CENTER);
+        JLabel lblSub = new JLabel("Inicia sesion para comenzar", SwingConstants.CENTER);
         lblSub.setForeground(Color.GRAY);
         lblSub.setBounds(0, 70, 350, 20);
         panelPrincipal.add(lblSub);
